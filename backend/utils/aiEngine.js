@@ -170,3 +170,25 @@ module.exports = {
   generateStudyStrategyAI,
   analyzeStudyBehaviourAI
 };
+
+function generateInsights(analyticsArr) {
+
+  if (!analyticsArr?.length)
+    return ["📚 Start studying to unlock AI insights"];
+
+  const avg =
+    analyticsArr.reduce(
+      (s, a) =>
+        s + a.completedHours /
+        Math.max(a.plannedHours, 0.1),
+      0
+    ) / analyticsArr.length;
+
+  if (avg < 0.5)
+    return ["⚠️ Reduce workload slightly"];
+
+  if (avg > 0.9)
+    return ["🔥 Excellent discipline level"];
+
+  return ["👍 Good consistency maintained"];
+}
