@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { usersAPI, subjectsAPI, timetableAPI, analyticsAPI } from '../utils/api';
+import { usersAPI, subjectsAPI, timetableAPI, analyticsAPI, authAPI } from '../utils/api';
 
 const Ctx = createContext(null);
 
@@ -75,7 +75,10 @@ export function AppProvider({ children }) {
 
   const addSubject = async (payload) => {
     try {
-      const { data } = await subjectsAPI.create({ ...payload, userId: user._id });
+      const userId = payload.userId || user?._id;
+      if (!userId) throw new Error('User not authenticated');
+      
+      const { data } = await subjectsAPI.create({ ...payload, userId });
       setSubjects(prev => [...prev, data]);
       showToast(`${payload.name} added! 📚`);
       return data;
@@ -99,10 +102,12 @@ export function AppProvider({ children }) {
   };
 
   /* ── Timetable ──────────────────────────────────────────────────────── */
-  const generateTimetable = async () => {
+  const generateTimetable = async (userIdParam) => {
     setLoading(true);
     try {
-      const { data } = await timetableAPI.generate(user._id);
+      const id = userIdParam || user?._id;
+      if (!id) throw new Error('User ID missing');
+      const { data } = await timetableAPI.generate(id);
       setTimetable(data);
       showToast('Smart timetable generated! 🗓️');
       return data;
@@ -145,7 +150,60 @@ export function AppProvider({ children }) {
   };
 
   /* ── Auth ───────────────────────────────────────────────────────────── */
+  const normalizeUser = (user) => {
+    if (!user) return null;
+    // ensure we have _id for backend calls
+    const id = user._id || user.id;
+    return { ...user, _id: id };
+  };
+
+  const register = async (payload) => {
+    setLoading(true);
+    try {
+      const { data } = await authAPI.register(payload);
+      localStorage.setItem("token", data.token);
+      const normalized = normalizeUser(data.user);
+      setUser(normalized);
+      showToast(`Welcome, ${data.user.name}! 🎉`);
+      return { ...data, user: normalized };
+    } catch (err) {
+      showToast(err.message, 'error');
+      throw err;
+    } finally { setLoading(false); }
+  };
+
+  const signInWithGoogle = async (idToken) => {
+    setLoading(true);
+    try {
+      const { data } = await authAPI.google({ idToken });
+      localStorage.setItem("token", data.token);
+      const normalized = normalizeUser(data.user);
+      setUser(normalized);
+      showToast(`Welcome, ${data.user.name}! 🎉`);
+      return { ...data, user: normalized };
+    } catch (err) {
+      showToast(err.message, 'error');
+      throw err;
+    } finally { setLoading(false); }
+  };
+
+  const login = async (email, password) => {
+    setLoading(true);
+    try {
+      const { data } = await authAPI.login({ email, password });
+      localStorage.setItem("token", data.token);
+      const normalized = normalizeUser(data.user);
+      setUser(normalized);
+      showToast(`Welcome back! 👋`);
+      return { ...data, user: normalized };
+    } catch (err) {
+      showToast(err.message, 'error');
+      throw err;
+    } finally { setLoading(false); }
+  };
+
   const logout = () => {
+    localStorage.removeItem("token");
     setUser(null); setSubjects([]); setTimetable(null); setAnalytics(null);
   };
 
@@ -155,7 +213,7 @@ export function AppProvider({ children }) {
       createUser, updateUser, awardXP,
       addSubject, updateSubject, deleteSubject, loadSubjects,
       generateTimetable, loadTimetable, completeTask, redistributeMissed,
-      loadAnalytics, logout, showToast
+      loadAnalytics, logout, showToast, register, login, signInWithGoogle
     }}>
       {children}
     </Ctx.Provider>

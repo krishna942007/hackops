@@ -38,6 +38,9 @@ app.use((req, _res, next) => {
    ROUTES (Debug Mode)
 ───────────────────────────────────────────── */
 
+const authRoute = require('./routes/auth');
+console.log("authRoute type:", typeof authRoute);
+
 const usersRoute = require('./routes/users');
 console.log("usersRoute type:", typeof usersRoute);
 
@@ -53,6 +56,7 @@ console.log("analyticsRoute type:", typeof analyticsRoute);
 const tasksRoute = require('./routes/tasks');
 console.log("tasksRoute type:", typeof tasksRoute);
 
+app.use('/api/auth', authRoute);
 app.use('/api/users', usersRoute);
 app.use('/api/subjects', subjectsRoute);
 app.use('/api/timetable', timetableRoute);

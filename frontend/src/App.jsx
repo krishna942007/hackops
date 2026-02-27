@@ -5,6 +5,7 @@ import Toast from './components/common/Toast';
 import Layout from './components/common/Layout';
 import IntroScreen from './components/common/IntroScreen';
 import LandingPage      from './pages/LandingPage';
+import LoginPage        from './pages/LoginPage';
 import OnboardingPage   from './pages/OnboardingPage';
 import DashboardPage    from './pages/DashboardPage';
 import TimetablePage    from './pages/TimetablePage';
@@ -24,6 +25,7 @@ function AppRoutes() {
       {toast && <Toast key={toast.id} message={toast.message} type={toast.type} />}
       <Routes>
         <Route path="/"           element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
+        <Route path="/login"      element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route element={<Guard><Layout /></Guard>}>
           <Route path="/dashboard"    element={<DashboardPage />} />

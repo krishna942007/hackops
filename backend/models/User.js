@@ -15,7 +15,10 @@ const BadgeSchema = new mongoose.Schema({
 
 const UserSchema = new mongoose.Schema({
   name:  { type: String, required: true, trim: true },
-  email: { type: String, trim: true, lowercase: true, sparse: true },
+  email: { type: String, trim: true, lowercase: true, sparse: true, unique: true },
+  password: { type: String },
+  googleId: { type: String, unique: true, sparse: true },
+  authProvider: { type: String, enum: ['email', 'google'], default: 'email' },
 
   profile: {
     dailyHours:         { type: Number, default: 4, min: 1, max: 16 },
@@ -39,5 +42,29 @@ const UserSchema = new mongoose.Schema({
     peakFocusHour:       { type: String, default: '' }
   }
 }, { timestamps: true });
+
+/* ────────────────────────────────────────────────
+   Password Hashing Middleware
+──────────────────────────────────────────────── */
+const bcrypt = require('bcryptjs');
+
+UserSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ────────────────────────────────────────────────
+   Instance Methods
+──────────────────────────────────────────────── */
+UserSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
 module.exports = mongoose.model('User', UserSchema);
